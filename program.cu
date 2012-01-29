@@ -4,6 +4,8 @@
 #include <cuda.h>
 using namespace std;
 
+
+//cannot use builtin functions on the device, we have to manually define our own, therefore I have to reinvent the wheel here
 __device__ void calculate_exponent(int base,int exponent,long &result){
 	result = 1L;
 	if(exponent==0){
