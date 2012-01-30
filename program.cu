@@ -2,9 +2,13 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <cuda.h>
+
 using namespace std;
 
-/*  Cannot use built-in functions, need to rewrite this so it can be run on the device, kinda reinventing the wheel over here */
+/*  Cannot use built-in functions, need to rewrite pow function so it can  run on the device, kinda reinventing the wheel over here
+	Im not sure if CUDA has something in its SDK, however better build it myself to avoid any overhead
+	0^0 even though is not defined, im treating it as 1 
+*/
 __device__ void calculate_exponent(int base,int exponent,long &result){
 	result = 1L;
 	if(exponent==0){
@@ -21,7 +25,7 @@ __global__ void evaluate(int *input, int totalSizeOfArray, int number_genes, int
 	/*global position in population array index calculation */
 	int startingPosition = (blockIdx.y * threads_per_block * number_genes * individualsPerThread) + (threadIdx.y * number_genes * individualsPerThread);
 	if(startingPosition>=totalSizeOfArray){
-		return; //*return if thread is useless */
+		return; //*return if thread is useless, the final block may have some threads that will not compute any data therefore we return early */
 	}
 
 	/*global position in scores array index calculation  */
@@ -53,7 +57,7 @@ __global__ void evaluate(int *input, int totalSizeOfArray, int number_genes, int
 		const unsigned int number_genes = 10;
 		const unsigned int number_individuals = 10000000;
 
-		const unsigned int threads_per_block_evaluation = 500; //DO NOT FORGET: BLOCK IS 1 thread width, and threads_per_block  height, MAX 512
+		const unsigned int threads_per_block_evaluation = 500; //DO NOT FORGET: BLOCK IS 1 thread width, and threads_per_block  height, MAX 512 
 		const unsigned int individuals_per_thread_evaluation = 50;
 
 
@@ -87,15 +91,22 @@ __global__ void evaluate(int *input, int totalSizeOfArray, int number_genes, int
 		dim3 grid_evaluation(1,blocks_required_evaluation); /* in terms of blocks */
 		dim3 block_evaluation(1,threads_per_block_evaluation); /* in terms of threads*/
 
-		cout << "Blocks " << blocks_required_evaluation<< endl;
-		cout << "Threads " << threads_per_block_evaluation<< endl;
-		cout << "Start";
+		cout << "-Algorithm parameters-" << endl;
+		cout << "Individuals " << number_individuals << endl;
+		cout << "Genes per individual " << number_genes << endl;
+		cout << "Individuals computed per thread " << individuals_per_thread_evaluation << endl;
+		cout << "-Computing distribution-" << endl;
+		cout << "Blocks " << blocks_required_evaluation << endl;
+		cout << "Threads per block " << threads_per_block_evaluation << endl;
+		cout << "Total number of threads: " << blocks_required_evaluation*threads_per_block_evaluation << endl << endl;
+		cout << "Start" << endl;
 		/*we launch evaluation kernel: evaluate(int *input, int totalSizeOfArray, int number_genes, int individualsPerThread, int number_blocks, int threads_per_block, long *scores)*/
+		
 		evaluate <<< grid_evaluation, block_evaluation >>> (population_array_device, number_genes*number_individuals, number_genes, individuals_per_thread_evaluation, blocks_required_evaluation, threads_per_block_evaluation, scores_array_device);
 		
 		/*cudaMemcpy(scores_array_host, scores_array_device, memory_for_scores, cudaMemcpyDeviceToHost);*/
 		/*cudaMemcpy(population_array_host, population_array_device, memory_for_population, cudaMemcpyDeviceToHost);*/
 
-
+		
 		return 0;
 	}
