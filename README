@@ -1,0 +1,9 @@
+This is a CUDA implementation of a Genetic Algorithm to solve a polynomial
+
+Under development
+
+Why everything in one file? so you can copy-paste it very fast
+
+Please note that algorithm settings have to vary on every NVIDIA card in order to achieve peak performance
+
+carloschilazo@gmail.com
